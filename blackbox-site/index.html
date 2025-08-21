@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Black Box Testing</title>
+<meta name="description" content="QA services: manual and automated testing, audits, and reliability checks." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-a:#0b1020;     /* top bg */
+    --bg-b:#0a1326;     /* bottom bg */
+    --grid:#0f1e33;     /* grid lines */
+    --panel:#0f172aee;  /* cards/bg panels */
+    --card:#0f1a31;     /* card fill */
+    --stroke:#1f2d4b;   /* borders */
+    --text:#eaf1ff;
+    --muted:#b9c7de;
+    --accent:#19d2ff;
+    --accent-2:#68e8ff;
+    --accent-deep:#0fb9e6;
+    --robot:#1a2438;    /* dark, not yellow */
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;min-height:100%;overflow-x:hidden;overscroll-behavior:none}
+  html{background-color:#0a1326}
+  body{
+    font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto;
+    color:var(--text);
+    line-height:1.55;
+    padding-top: 72px; /* space for fixed (frozen) header */
+    /* LIGHTER blended background: blue + green + yellow */
+    background-color:#0a1326; /* fallback so bounce never shows white */
+    background:
+      radial-gradient(1100px 720px at 12% -12%, #3aa4c4 0%, rgba(58,164,196,0) 58%),
+      radial-gradient(900px 620px at 86% -15%, #58cf9b 0%, rgba(88,207,155,0) 60%),
+      radial-gradient(800px 560px at 50% 115%, #e0c975 0%, rgba(224,201,117,0) 70%),
+      linear-gradient(180deg,#1b2c38,#1f3641);
+    background-attachment: fixed,fixed,fixed,fixed;
+  }
+  /* subtle grid */
+  body::before{
+    content:""; position:fixed; inset:-80px; pointer-events:none; z-index:-1;
+    background-image:
+      linear-gradient(to right, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px, 28px 28px;
+    opacity:.22;
+    mask-image: radial-gradient(1200px 800px at 50% 0%, #000 60%, transparent 100%);
+  }
+
+  /* layout helpers */
+  .container{ width:min(1100px,92vw); margin:0 auto }
+  .spacer{ height:16px }
+
+  /* HEADER */
+  .site-header{
+    position:fixed; top:0; left:0; right:0; z-index:100; /* FREEZE header */
+    backdrop-filter: blur(10px) saturate(1.1);
+    background:linear-gradient(180deg,rgba(10,16,30,.88),rgba(10,16,30,.62) 70%, rgba(10,16,30,0));
+    border-bottom:1px solid var(--stroke);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 0;
+  }
+  .nav-wide{ width:100%; padding:12px 24px; }
+  .brand{
+    display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.02em;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .brand .dot{ width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 14px var(--accent) }
+  .nav-links{ display:flex; gap:12px; }
+  .nav-links a{
+    display:inline-block;
+    color:var(--accent); text-decoration:none;
+    padding:10px 16px; border-radius:999px; font-weight:800;
+    border:1px solid #2f83a3;
+    background:linear-gradient(180deg,#1b6e8f,#14506b);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 16px rgba(0,0,0,.45);
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .nav-links a:hover{
+    transform: translateY(-1px);
+    border-color:#49bde0;
+    background:linear-gradient(180deg,#2191b8,#166483);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 12px 22px rgba(0,0,0,.55);
+    color:var(--accent-2);
+  }
+
+  .btn{ padding:.55rem .9rem; border-radius:12px; border:1px solid var(--stroke); text-decoration:none; color:var(--text) }
+  .btn.primary{ background:linear-gradient(180deg,var(--accent),var(--accent-2)); color:#05222b; border-color:transparent; font-weight:800 }
+  .btn.ghost{ background:#0e1726 }
+
+  /* HERO */
+  .hero{ padding:28px 0 8px }
+  .hero-head{ text-align:center; margin-bottom:10px }
+  .tagline{
+    font-family:'JetBrains Mono', monospace !important;
+    font-size:clamp(26px,3.6vw,40px);
+    margin:0 0 6px;
+    font-weight:800;
+    color:#eaff8f !important; /* solid code-green headline */
+    text-shadow:0 0 8px rgba(234,255,143,.25);
+  }
+  .sub{
+    font-family:'JetBrains Mono', monospace !important;
+    color:#00ff88 !important; /* code green */
+    margin:0;
+    text-shadow:0 0 6px rgba(0,255,136,.18);
+  }
+
+  .anim-wrap{ display:grid; place-items:center; padding:10px 0 6px }
+  .title-anim{ width:min(1000px,92vw); height:auto; filter:drop-shadow(0 14px 28px rgba(0,0,0,.35)) }
+  .title-anim .letter-box{ filter: drop-shadow(0 18px 34px rgba(0,0,0,.46)) drop-shadow(0 10px 24px rgba(74,255,178,.10)) }
+  .letter-box{
+    /* real BLACK BOX look */
+    fill: url(#gradBlack), #0d0f12;
+    rx:20; ry:20;
+    stroke:#141821; stroke-opacity:.95; stroke-width:1px;
+    filter: drop-shadow(0 18px 34px rgba(0,0,0,.46)) drop-shadow(0 10px 24px rgba(74,255,178,.10));
+  }
+  .letter-char{
+    font-family: 'JetBrains Mono', monospace;
+    fill: url(#gradCode);
+    stroke:#06222c; stroke-width:1px; paint-order: stroke fill;
+    font-weight:800; font-size:clamp(36px,3.4vw,50px); letter-spacing:.01em;
+    text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased;
+    pointer-events:none;
+  }
+  .robot-body{ fill: var(--robot) }
+  .robot-eye{ fill:#090f18 }
+  .fade{ opacity:0 }
+
+  /* === Code-style strip under hero === */
+  .code-card{
+    width:min(1000px,92vw);
+    margin:12px auto 0;
+    background:linear-gradient(180deg,rgba(13,19,32,.92),rgba(10,16,28,.88));
+    border:1px solid #20324f;
+    border-radius:16px;
+    box-shadow:0 18px 34px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+    overflow:hidden;
+  }
+  .code-card .code-header{
+    display:flex; align-items:center; gap:8px;
+    padding:10px 12px; border-bottom:1px solid #1b2a44;
+    background:linear-gradient(180deg,rgba(20,32,52,.9),rgba(14,24,40,.9));
+  }
+  .code-dot{ width:10px; height:10px; border-radius:50%; display:inline-block }
+  .code-dot.yellow{ background:#FFE27A; box-shadow:0 0 8px rgba(255,226,122,.8) }
+  .code-dot.green{ background:#B9FF95; box-shadow:0 0 8px rgba(185,255,149,.7) }
+  .code-dot.teal{ background:#6af0ff; box-shadow:0 0 8px rgba(106,240,255,.7) }
+  .code-body{ padding:14px 16px }
+  .code-pre{ margin:0; font-family:'JetBrains Mono', monospace; font-size:14px; line-height:1.65; color:#d8e6f3; white-space:pre; overflow:auto }
+  .code-section{ margin:28px auto 40px; }
+  /* simple syntax accents */
+  .cmt{ color:#6c819a }
+  .key{ color:#ffe27a; font-weight:800 }
+  .str{ color:#b9ff95 }
+  .idn{ color:#6af0ff }
+  .pun{ color:#7fa6c7 }
+
+  /* SECTION WRAPPERS (not whole body) */
+  .section{ padding:28px 0 40px }
+  .section h2{ margin:0 0 16px; font-size:clamp(20px,2.2vw,26px) }
+
+  /* CARD GRIDS */
+  .card-grid{ display:grid; gap:16px; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)) }
+  .card{
+    background:linear-gradient(180deg,rgba(19,32,58,.9),rgba(17,28,48,.85));
+    border:1px solid var(--stroke);
+    border-radius:16px;
+    padding:16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .card:hover{
+    transform: translateY(-2px);
+    border-color:#2b4b7a;
+    box-shadow: 0 16px 38px rgba(0,0,0,.45), 0 0 0 1px rgba(111,234,255,.06) inset;
+  }
+  .card h3{ margin:0 0 6px; font-size:18px }
+  .muted{ color:var(--muted) }
+
+  /* CONTACT PANEL */
+  .contact-panel{
+    background:linear-gradient(180deg,rgba(18,30,54,.9),rgba(14,24,42,.85));
+    border:1px solid var(--stroke);
+    border-radius:16px;
+    padding:18px;
+  }
+
+  /* FOOTER */
+  .site-footer{ border-top:1px solid var(--stroke); padding:18px; text-align:center; color:var(--muted) }
+
+  @media (max-width:720px){
+    .nav-links{ display:none } /* na malom: sakrij sekundarne linkove, ostavi CTA po zelji */
+  }
+</style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="nav nav-wide">
+      <div class="brand">
+        <span class="dot"></span>
+        <span>Black Box <span style="color:var(--accent)">Testing</span></span>
+      </div>
+      <nav class="nav-links">
+        <a href="#services">Services</a>
+        <a href="#process">Process</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container hero-head">
+      <h1 class="tagline">Find bugs before your users do.</h1>
+      <p class="sub">Manual and automated QA. Clear reports. Quick turnaround.</p>
+    </div>
+    <div class="anim-wrap">
+      <svg viewBox="0 0 1200 360" aria-label="Black Box Testing" role="img" class="title-anim">
+        <!-- gradient for nicer boxes -->
+        <defs>
+          <linearGradient id="gradAccent" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#6af0ff"/>
+            <stop offset="100%" stop-color="#00b4d8"/>
+          </linearGradient>
+          <linearGradient id="gradBlack" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#121417"/>
+            <stop offset="100%" stop-color="#0a0b0e"/>
+          </linearGradient>
+          <linearGradient id="gradCode" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#FFE27A"/>
+            <stop offset="100%" stop-color="#B9FF95"/>
+          </linearGradient>
+        </defs>
+        <g id="robots"></g>
+        <g id="letters"></g>
+      </svg>
+    </div>
+    <div class="code-card">
+      <div class="code-header">
+        <span class="code-dot yellow"></span>
+        <span class="code-dot green"></span>
+        <span class="code-dot teal"></span>
+      </div>
+      <div class="code-body">
+        <pre class="code-pre"><span class="cmt">// QA offering at a glance</span>
+<span class="key">const</span> <span class="idn">services</span> <span class="pun">=</span> [
+  <span class="str">"Manual testing — exploratory, regression, smoke, UAT"</span>,
+  <span class="str">"Automation — Cypress, Selenium, API"</span>,
+  <span class="str">"Audits & strategy — coverage, risk, CI"</span>
+]<span class="pun">;</span>
+
+<span class="key">const</span> <span class="idn">process</span> <span class="pun">=</span> [
+  <span class="str">"Discover"</span>, <span class="str">"Plan"</span>, <span class="str">"Execute"</span>, <span class="str">"Verify"</span>
+]<span class="pun">;</span>
+
+<span class="cmt">// Contact</span>
+<span class="idn">email</span> <span class="pun">=</span> <span class="str">"contact@blackboxtesting.dev"</span><span class="pun">;</span>
+</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services" class="section">
+    <div class="code-card code-section">
+      <div class="code-header">
+        <span class="code-dot yellow"></span>
+        <span class="code-dot green"></span>
+        <span class="code-dot teal"></span>
+      </div>
+      <div class="code-body">
+        <pre class="code-pre"><span class="cmt">// Services — what you get</span>
+<span class="key">const</span> <span class="idn">services</span><span class="pun">:</span> <span class="idn">Service[]</span> <span class="pun">=</span> [
+  { <span class="idn">name</span><span class="pun">:</span> <span class="str">"Manual testing"</span>, <span class="idn">includes</span><span class="pun">:</span> [<span class="str">"exploratory"</span>, <span class="str">"regression"</span>, <span class="str">"smoke"</span>, <span class="str">"UAT"</span>] },
+  { <span class="idn">name</span><span class="pun">:</span> <span class="str">"Automation"</span>,     <span class="idn">stack</span><span class="pun">:</span> [<span class="str">"Cypress"</span>, <span class="str">"Selenium"</span>, <span class="str">"API"</span>], <span class="idn">focus</span><span class="pun">:</span> <span class="str">"stable builds & fast feedback"</span> },
+  { <span class="idn">name</span><span class="pun">:</span> <span class="str">"Audits & strategy"</span>, <span class="idn">deliverables</span><span class="pun">:</span> [<span class="str">"coverage review"</span>, <span class="str">"risk-based plan"</span>, <span class="str">"CI hooks"</span>] }
+]<span class="pun">;</span>
+</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section id="process" class="section">
+    <div class="code-card code-section">
+      <div class="code-header">
+        <span class="code-dot yellow"></span>
+        <span class="code-dot green"></span>
+        <span class="code-dot teal"></span>
+      </div>
+      <div class="code-body">
+        <pre class="code-pre"><span class="cmt">// Process — how we work</span>
+<span class="key">const</span> <span class="idn">process</span> <span class="pun">=</span> [
+  { <span class="idn">step</span><span class="pun">:</span> <span class="str">"Discover"</span>, <span class="idn">outputs</span><span class="pun">:</span> [<span class="str">"scope"</span>, <span class="str">"risks"</span>, <span class="str">"success criteria"</span>] },
+  { <span class="idn">step</span><span class="pun">:</span> <span class="str">"Plan"</span>,     <span class="idn">outputs</span><span class="pun">:</span> [<span class="str">"test plan"</span>, <span class="str">"environment"</span>, <span class="str">"realistic data"</span>] },
+  { <span class="idn">step</span><span class="pun">:</span> <span class="str">"Execute"</span>,  <span class="idn">outputs</span><span class="pun">:</span> [<span class="str">"test runs"</span>, <span class="str">"defects"</span>, <span class="str">"progress"</span>] },
+  { <span class="idn">step</span><span class="pun">:</span> <span class="str">"Verify"</span>,   <span class="idn">outputs</span><span class="pun">:</span> [<span class="str">"fix validation"</span>, <span class="str">"sign-off"</span>, <span class="str">"next steps"</span>] }
+]<span class="pun">;</span>
+</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="section">
+    <div class="code-card code-section">
+      <div class="code-header">
+        <span class="code-dot yellow"></span>
+        <span class="code-dot green"></span>
+        <span class="code-dot teal"></span>
+      </div>
+      <div class="code-body">
+        <pre class="code-pre"><span class="cmt">// Contact</span>
+<span class="key">const</span> <span class="idn">contact</span> <span class="pun">=</span> {
+  <span class="idn">email</span><span class="pun">:</span> <span class="str">"contact@blackboxtesting.dev"</span>,
+  <span class="idn">response_time</span><span class="pun">:</span> <span class="str">"within 24h"</span>
+}<span class="pun">;</span>
+</pre>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">© 2025 Black Box Testing</div>
+  </footer>
+
+  <!-- GSAP -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const lettersLayer = document.getElementById("letters");
+      const robotsLayer = document.getElementById("robots");
+
+      const lines = ["BLACK","BOX","TESTING"];
+      const boxW = 120, boxH = 68;
+      const gapX = 18, lineGap = 104;
+      const leftPad = 40;
+
+      // Build once
+      const items = [];
+      lines.forEach((w, lineIdx) => {
+        [...w].forEach((ch, i) => {
+          const tx = leftPad + i*(boxW+gapX);
+          const ty = 70 + lineIdx*lineGap;
+
+          // create letter group
+          const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+          const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+          rect.setAttribute("class","letter-box");
+          rect.setAttribute("width", boxW);
+          rect.setAttribute("height", boxH);
+          rect.setAttribute("opacity","0");
+          const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+          text.setAttribute("class","letter-char");
+          text.setAttribute("text-anchor","middle");
+          text.setAttribute("alignment-baseline","middle");
+          text.setAttribute("dominant-baseline","middle");
+          text.setAttribute("x", (leftPad + i*(boxW+gapX)) + boxW/2);
+          text.setAttribute("y", (70 + lineIdx*lineGap) + boxH/2);
+          text.textContent = ch;
+          g.append(rect, text);
+          lettersLayer.appendChild(g);
+
+          // stash
+          items.push({g, rect, text, tx, ty, robot:null});
+        });
+      });
+
+      function positionLetter(item, x, y){
+        item.rect.setAttribute("x", x);
+        item.rect.setAttribute("y", y);
+        item.text.setAttribute("x", x + boxW/2);
+        item.text.setAttribute("y", y + boxH/2);
+      }
+
+      function spawnRobot(x, y){
+        const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+        const body = document.createElementNS("http://www.w3.org/2000/svg","circle");
+        body.setAttribute("class","robot-body"); body.setAttribute("r",6.5);
+        body.setAttribute("cx",x); body.setAttribute("cy",y);
+        const e1 = document.createElementNS("http://www.w3.org/2000/svg","circle");
+        e1.setAttribute("class","robot-eye"); e1.setAttribute("r",1.2);
+        e1.setAttribute("cx",x-2.2); e1.setAttribute("cy",y-1.1);
+        const e2 = document.createElementNS("http://www.w3.org/2000/svg","circle");
+        e2.setAttribute("class","robot-eye"); e2.setAttribute("r",1.2);
+        e2.setAttribute("cx",x+2.2); e2.setAttribute("cy",y-1.1);
+        g.append(body,e1,e2); robotsLayer.appendChild(g);
+        return {g,body,e1,e2};
+      }
+
+      let loopDC = null;
+      function cycle(){
+        // reset start positions (off-screen left + down) and spawn fresh robots
+        robotsLayer.innerHTML = "";
+        items.forEach((it) => {
+          const fromX = it.tx - (300 + Math.random()*260);
+          const fromY = it.ty + (120 + Math.random()*100);
+          positionLetter(it, fromX, fromY);
+          it.rect.setAttribute("opacity","0");
+          it.robot = spawnRobot(fromX - 14, fromY + 14);
+        });
+
+        const tl = gsap.timeline({defaults:{ease:"power3.out"}});
+        items.forEach((it, idx) => {
+          const d = idx*0.08;
+          tl.to(it.rect, {attr:{x:it.tx, y:it.ty}, opacity:1, duration:0.95}, d);
+          tl.to(it.text, {attr:{x: it.tx + boxW/2, y: it.ty + boxH/2}, duration:0.95}, d);
+          tl.to(it.robot.body, {attr:{cx:it.tx-14, cy:it.ty+14}, duration:0.95}, d);
+          tl.to([it.robot.e1,it.robot.e2], {duration:0.95}, d);
+        });
+        tl.to("#robots", {opacity:0, duration:0.35, ease:"power1.out"}, "+=0.15");
+        if (loopDC) loopDC.kill();
+        loopDC = gsap.delayedCall(8, cycle);
+      }
+      cycle();
+    });
+  </script>
+</body>
+</html>
